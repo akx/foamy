@@ -6,6 +6,7 @@ from foamy.transport import RequestsTransport
 from foamy.basic_types import BASIC_TYPES
 from foamy.wsdl import WSDLReader
 from lxml.etree import tostring
+from foamy.debugging import Dumper
 
 class ServiceSelector(object):
     def __init__(self, context):
@@ -28,6 +29,15 @@ class ServiceSelector(object):
         def service_func(*args, **kwargs):
             return self.context.dispatch(port, op, args, kwargs)
         return service_func
+
+    def _dump(self, dumper):
+        dumper.enter("Known methods:")
+        for opname, (port, op) in sorted(self.operation_cache.iteritems()):
+            dumper.write(opname + op.signature)
+        dumper.exit()
+
+    def dump(self, stream):
+        return self._dump(Dumper(stream))        
 
 class Context(object):
     def __init__(self, transport=None, loader=None):
@@ -53,9 +63,7 @@ class Context(object):
         else:
             raise KeyError("Type '%s' is not known to this context." % qname)
 
-    def dump(self, stream):
-        from foamy.debugging import Dumper
-        dumper = Dumper(stream)
+    def _dump(self, dumper):
         for kind, source in (
             ("types",       self.types),
             ("messages",    self.messages),
@@ -66,12 +74,14 @@ class Context(object):
             dumper.enter("Known %s:" % kind)
             for qname, obj in sorted(source.iteritems()):
                 dumper.write(qname)
-                odump = getattr(obj, "dump", None)
+                odump = getattr(obj, "_dump", None)
                 if odump:
                     with dumper:
                         odump(dumper)
             dumper.exit()
 
+    def dump(self, stream):
+        return self._dump(Dumper(stream))
 
     def _get_service(self):
         return ServiceSelector(self)

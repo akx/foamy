@@ -3,6 +3,8 @@ from foamy.ns import COMMON_NAMESPACES as NS
 from foamy.objs import ContextBoundObject
 from lxml.etree import Element
 import sys
+import logging
+logger = logging.getLogger(__name__)
 
 class BaseType(object):
     def marshal(self, obj):
@@ -61,6 +63,7 @@ class Type(ContextBoundObject, BaseType):
             # XXX: May be incomplete?
 
     def marshal(self, obj):
+        logger.debug("Marshalling: %s -> %s", obj, self.name)
         node = Element(self.qname)
         if self.base:
             basic_m = self.base.marshal(obj)

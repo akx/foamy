@@ -1,5 +1,7 @@
-import requests
 from foamy.objs import Response
+import logging
+import requests
+logger = logging.getLogger(__name__)
 
 class RequestsTransport(object):
     def __init__(self):
@@ -13,8 +15,10 @@ class RequestsTransport(object):
         else:
             kw["method"] = "GET"
 
+        logger.debug("%s -> %s: %s", kw["method"], kw["url"], kw.get("data", ""))
+
         resp = self.session.request(**kw)
         resp.raise_for_status()
+
+
         return Response(request, resp.status_code, resp.headers, resp.content)
-
-

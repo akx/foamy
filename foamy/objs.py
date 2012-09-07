@@ -119,6 +119,18 @@ class Operation(object):
     def __str__(self):
         return "<Operation %s:%s>" % (self.port_type.name, self.name)
 
+    def _get_signature(self):
+        parts = ["("]
+        if self.input:
+            parts.append(str(self.input.message.name))
+        parts.append(")")
+        if self.output:
+            parts.append(" -> ")
+            parts.append(str(self.output.message.name))
+        return "".join(parts)
+
+    signature = property(_get_signature)
+
 class PortType(ContextBoundObject):
     def __init__(self, context, ns, name):
         super(PortType, self).__init__(context, ns, name)
