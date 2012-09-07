@@ -48,6 +48,7 @@ class WSDLReader(object):
 
     def parse_xmlschema(self, schema):
         tns = schema.get("targetNamespace")
+        self.nsmap = self.nsmap.augment(schema.nsmap)
         # XXX: Always assumes elementFormDefault="qualified"
         new_types = []
 
