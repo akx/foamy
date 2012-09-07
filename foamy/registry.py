@@ -4,10 +4,10 @@ class Registry(dict):
         dict.__init__(self, *args, **kwargs)
         self.registration_order = []
 
-    def register(self, object):
-        key = getattr(object, self.KEY_ATTRIBUTE)
+    def register(self, obj):
+        key = getattr(obj, self.KEY_ATTRIBUTE)
         if key not in self:
-            self[key] = object
+            self[key] = obj
             self.registration_order.append(key)
 
     def in_order(self):

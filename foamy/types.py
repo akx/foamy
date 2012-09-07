@@ -14,39 +14,6 @@ class BaseType(object):
     def craft(self):
         raise NotImplementedError("Not implemented: craft()")
 
-class UnicodeType(BaseType):
-    def marshal(self, obj):
-        return unicode(obj)
-    def unmarshal(self, obj):
-        return unicode(obj)
-
-class IntegerType(BaseType):
-    def marshal(self, obj):
-        return unicode(int(obj))
-    def unmarshal(self, obj):
-        return int(obj)
-
-class BooleanType(BaseType):
-    def marshal(self, obj):
-        return ("true" if bool(obj) else "false")
-    def unmarshal(self, obj):
-        return unicode(obj).lower() == "true"
-
-class FloatType(BaseType):
-    def marshal(self, obj):
-        return unicode(float(obj))
-    def unmarshal(self, obj):
-        return float(obj)
-
-
-BASE_TYPES = {
-    NS.tag("schema", "string"):     UnicodeType(),
-    NS.tag("schema", "int"):        IntegerType(),
-    NS.tag("schema", "long"):       IntegerType(),
-    NS.tag("schema", "boolean"):    BooleanType(),
-    NS.tag("schema", "float"):      FloatType()
-}
-
 SENTINEL = object()
 
 def read_object_values(obj, keys):

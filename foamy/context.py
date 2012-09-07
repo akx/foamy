@@ -3,7 +3,7 @@ from foamy.ns import COMMON_NAMESPACES as NS
 from foamy.objs import Response
 from foamy.registry import QNameRegistry
 from foamy.transport import RequestsTransport
-from foamy.types import BASE_TYPES
+from foamy.basic_types import BASIC_TYPES
 from foamy.wsdl import WSDLReader
 from lxml.etree import tostring
 
@@ -47,7 +47,7 @@ class Context(object):
         reader.parse()
 
     def resolve_type(self, qname):
-        type = self.types.get(qname) or BASE_TYPES.get(qname)
+        type = self.types.get(qname) or BASIC_TYPES.get(qname)
         if type:
             return type
         else:
