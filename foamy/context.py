@@ -1,12 +1,29 @@
+from foamy.basic_types import BASIC_TYPES
+from foamy.debugging import Dumper
 from foamy.loader import ResourceLoader
 from foamy.ns import COMMON_NAMESPACES as NS
 from foamy.objs import Response
 from foamy.registry import QNameRegistry
 from foamy.transport import RequestsTransport
-from foamy.basic_types import BASIC_TYPES
 from foamy.wsdl import WSDLReader
 from lxml.etree import tostring
-from foamy.debugging import Dumper
+
+
+class WrappedOperation(object):
+    def __init__(self, context, port, operation):
+        self.context = context
+        self.port = port
+        self.operation = operation
+
+    def __call__(self, *args, **kwargs):
+        if kwargs:
+            message = kwargs
+        elif args:
+            message = args[0]
+        else:
+            message = None
+        return self.context.dispatch(self.port, self.operation, message)
+
 
 class ServiceSelector(object):
     def __init__(self, context):
@@ -18,26 +35,24 @@ class ServiceSelector(object):
         for service in self.context.services.in_order():
             for port in service.ports.in_order():
                 if port.binding.usable:
-                    for op in port.binding.port_type.operations.in_order():
-                        self.operation_cache[op.name] = (port, op)
+                    for operation in port.binding.port_type.operations.in_order():
+                        self.operation_cache[operation.name] = WrappedOperation(self.context, port, operation)
 
     def __getattr__(self, op_name):
         res = self.operation_cache.get(op_name)
         if not res:
             raise ValueError("%s is not a known operation in this context." % op_name)
-        port, op = res
-        def service_func(*args, **kwargs):
-            return self.context.dispatch(port, op, args, kwargs)
-        return service_func
+        return res
 
     def _dump(self, dumper):
         dumper.enter("Known methods:")
-        for opname, (port, op) in sorted(self.operation_cache.iteritems()):
-            dumper.write(opname + op.signature)
+        for opname, wop in sorted(self.operation_cache.iteritems()):
+            dumper.write(opname + wop.operation.signature)
         dumper.exit()
 
     def dump(self, stream):
-        return self._dump(Dumper(stream))        
+        return self._dump(Dumper(stream))
+
 
 class Context(object):
     def __init__(self, transport=None, loader=None):
@@ -63,13 +78,13 @@ class Context(object):
         else:
             raise KeyError("Type '%s' is not known to this context." % qname)
 
-    def _dump(self, dumper):
+    def _dump(self, dumper, with_service=False):
         for kind, source in (
-            ("types",       self.types),
-            ("messages",    self.messages),
-            ("port types",  self.port_types),
-            ("bindings",    self.bindings),
-            ("services",    self.services),
+            ("types", self.types),
+            ("messages", self.messages),
+            ("port types", self.port_types),
+            ("bindings", self.bindings),
+            ("services", self.services),
         ):
             dumper.enter("Known %s:" % kind)
             for qname, obj in sorted(source.iteritems()):
@@ -79,21 +94,24 @@ class Context(object):
                     with dumper:
                         odump(dumper)
             dumper.exit()
+        if with_service:
+            dumper.enter("Service Selector description:")
+            self.service._dump(dumper)
+            dumper.exit()
 
-    def dump(self, stream):
-        return self._dump(Dumper(stream))
+    def dump(self, stream, with_service=False):
+        return self._dump(Dumper(stream), with_service=with_service)
 
     def _get_service(self):
         return ServiceSelector(self)
 
     service = property(_get_service)
 
-    def dispatch(self, port, operation, args, kwargs):
-        req = port.envelope_message((kwargs or args), operation)
+    def dispatch(self, port, operation, message):
+        req = port.envelope_message(message, operation)
         resp = self.transport.dispatch(req)
         if operation.output:
             resp = port.unenvelope_message(resp.data, operation)
             return resp
         else:
             return
-

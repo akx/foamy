@@ -7,7 +7,7 @@ class Dumper(object):
         line = ("  " * self.indent_level) + line
         self.stream.write(line + "\n")
 
-    def enter(self, name = None):
+    def enter(self, name=None):
         if name:
             self.write(name)
         self.indent_level += 1

@@ -9,8 +9,9 @@ try:
 except:
     from StringIO import StringIO
 
+
 class ResourceCache(object):
-    def __init__(self, expiry_seconds = 86400):
+    def __init__(self, expiry_seconds=86400):
         self.cache_path = os.path.join(tempfile.gettempdir(), "foamy-resources")
         if not os.path.isdir(self.cache_path):
             os.makedirs(self.cache_path)
@@ -38,14 +39,13 @@ class ResourceCache(object):
             out_fp.write(data)
 
 
-
 class ResourceLoader(object):
     def __init__(self, transport, cache=None):
         self.transport = transport
         self.cache = cache or ResourceCache()
 
     def _download(self, url):
-        if "://" in url: # XXX
+        if "://" in url:  # XXX: Worst heuristic ever
             data = self.transport.dispatch(Request(url)).data
         else:
             with file(url, "rb") as fp:

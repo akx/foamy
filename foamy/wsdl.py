@@ -7,25 +7,27 @@ logger = logging.getLogger(__name__)
 
 def parse_port_wsdl(port_tag):
     for protocol, tagname in (
-        ("soap",    NS.tag("soap", "address")),
-        ("soap12",  NS.tag("soap12", "address")),
-        ("http",    NS.tag("http", "address")),
+        ("soap", NS.tag("soap", "address")),
+        ("soap12", NS.tag("soap12", "address")),
+        ("http", NS.tag("http", "address")),
     ):
         addr_tag = port_tag.find(tagname)
         if addr_tag is not None:
             return (protocol, addr_tag.get("location"))
 
+
 class WSDLReader(object):
     BINDING_CLASSES = {
         "soap": SOAPBinding
     }
+
     def __init__(self, context, wsdl_tree):
         self.context = context
         self.definitions = wsdl_tree.getroot()
         self.nsmap = NS.augment(self.definitions.nsmap)
         assert self.definitions.tag == NS.tag("wsdl", "definitions")
         self.target_namespace = self.definitions.get("targetNamespace")
-    
+
     def parse(self):
         for types in self.definitions.findall(NS.tag("wsdl", "types")):
             self.parse_types(types)
@@ -53,6 +55,7 @@ class WSDLReader(object):
         new_types = []
 
         elts = []
+        elts.extend(schema.findall(NS.tag("schema", "simpleType")))
         elts.extend(schema.findall(NS.tag("schema", "element")))
         elts.extend(schema.findall(NS.tag("schema", "complexType")))
 
@@ -60,7 +63,7 @@ class WSDLReader(object):
             typeobj = type_from_xmlschema_element(self.nsmap, self.context, tns, element, defer=True)
             self.context.types.register(typeobj)
             new_types.append((typeobj, element))
-        
+
         for typeobj, element in new_types:
             typeobj.parse_xmlschema_element(self.nsmap, element)
 
@@ -73,10 +76,8 @@ class WSDLReader(object):
         self.context.messages.register(message)
 
     def parse_op_part(self, c_tag):
-        # XXX - this should probably do something more class-y.
         message = self.nsmap.to_qname(c_tag.get("message"))
         return OperationPart(self.context.messages[message])
-
 
     def parse_port_type(self, port_type_tag):
         port_type = PortType(self.context, self.target_namespace, port_type_tag.get("name"))
@@ -89,6 +90,8 @@ class WSDLReader(object):
                     op.output = self.parse_op_part(c_tag)
                 elif c_tag.tag == NS.tag("wsdl", "fault"):
                     op.faults.append(self.parse_op_part(c_tag))
+                elif c_tag.tag == NS.tag("wsdl", "documentation"):
+                    op.documentation = c_tag.text
                 else:
                     raise NotImplementedError("Not implemented: %s" % c_tag.tag)
             port_type.operations.register(op)
@@ -113,6 +116,8 @@ class WSDLReader(object):
 
     def parse_service(self, service_tag):
         service = Service(self.context, self.target_namespace, service_tag.get("name"))
+        service.documentation = service_tag.get("documentation")
+
         for port_tag in service_tag.findall(NS.tag("wsdl", "port")):
             binding_name = self.nsmap.to_qname(port_tag.get("binding"))
             binding = self.context.bindings[binding_name]
