@@ -263,6 +263,7 @@ def type_from_xmlschema_element(nsmap, context, tns, element, defer=False):
 
     type = cls(context, tns, element.get("name"))
     if not defer:
+        nsmap = nsmap.augment(element.nsmap)
         type.parse_xmlschema_element(nsmap, element)
 
     return type

@@ -74,6 +74,16 @@ class DateType(BaseType):
     def craft(self):
         return datetime.date(1970, 1, 1)
 
+class TimeType(BaseType):
+    def marshal(self, obj):
+        return obj.strftime("%H:%M:%s")
+
+    def unmarshal(self, obj):
+        return datetime.datetime.strptime("%H:%M:%s", unicode(unwrap(obj))).time()
+
+    def craft(self):
+        return datetime.time(0, 0, 0)
+
 
 class DateTimeType(BaseType):
     def marshal(self, obj):
@@ -107,5 +117,6 @@ BASIC_TYPES = {
     NS.tag("schema", "double"): DoubleType(),
     NS.tag("schema", "decimal"): DecimalType(),
     NS.tag("schema", "date"): DateType(),
-    NS.tag("schema", "dateTime"): DateTimeType()
+    NS.tag("schema", "dateTime"): DateTimeType(),
+    NS.tag("schema", "time"): TimeType(),
 }

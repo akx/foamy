@@ -18,7 +18,10 @@ class NamespaceMap(dict):
         return self.__class__(dct)
 
     def to_qname(self, cname):
-        ns, name = cname.rsplit(":", 1)
+        if ":" in cname:
+            ns, name = cname.rsplit(":", 1)
+        else:
+            ns, name = None, cname
         return self.tag(ns, name)
 
 COMMON_NAMESPACES = NamespaceMap(
